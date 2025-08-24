@@ -3,10 +3,12 @@
 import type React from "react"
 import { useRef, useEffect, useState } from "react"
 import { FigmaCommentDialog, type CommentThread, type CommentReply } from "./figma-comment-dialog"
-import { ZoomIn, ZoomOut, RotateCcw, Upload, MessageCircle } from "lucide-react"
+import { ZoomIn, ZoomOut, RotateCcw, Upload, MessageCircle, Camera } from "lucide-react"
 import { Button } from "./ui/button"
 import dynamic from "next/dynamic"
 import { TextAnnotationEditor } from "./text-annotation-editor"
+import html2canvas from "html2canvas-pro"
+
 
 // Dynamically import react-pdf components to avoid SSR and ESM issues
 const Document = dynamic(() => import("react-pdf").then((mod) => mod.Document), { 
@@ -46,6 +48,8 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pdfImageDataUrl, setPdfImageDataUrl] = useState<string | null>(null);
+
 
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentAnnotation, setCurrentAnnotation] = useState(null)
@@ -108,6 +112,36 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
     formatting: any
   } | null>(null)
   const [editingTextAnnotation, setEditingTextAnnotation] = useState<string | null>(null)
+
+  const renderPdfPageToImage = async () => {
+    if (!pdfjs || !pdfFile || !currentPage) return null;
+    // Accept both URL and File objects
+    const fileSpec = typeof pdfFile === 'string' ? pdfFile : URL.createObjectURL(pdfFile);
+  
+    const doc = await pdfjs.getDocument(fileSpec).promise;
+    const page = await doc.getPage(currentPage);
+  
+    const viewport = page.getViewport({ scale: 2 }); // adjust scale as needed
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const context = canvas.getContext("2d");
+  
+    await page.render({ canvasContext: context, viewport }).promise;
+    const dataUrl = canvas.toDataURL();
+    return dataUrl;
+  };
+  
+
+  const handleScreenshot = async () => {
+    if (!containerRef.current) return;
+    containerRef.current.style.boxShadow = "0 0 0 4px red inset";
+    const canvas = await html2canvas(containerRef.current, { useCORS: true });
+    const imgData = canvas.toDataURL("image/png");
+    // For testing: open the screenshot in a new browser tab
+    window.open(imgData);
+    // Later: send imgData to your chatbot as needed
+  };
 
   // Notify parent when PDF file changes
   useEffect(() => {
@@ -1371,6 +1405,16 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
 
           {/* Zoom controls moved to right side */}
           <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleScreenshot}
+            className="h-8 w-8 p-0 ml-1 bg-transparent"
+            title="Capture Screenshot"
+          >
+              📸
+            </Button>
+
             <Button variant="outline" size="sm" onClick={handleZoomOut} className="h-8 w-8 p-0 bg-transparent">
               <ZoomOut className="h-4 w-4" />
             </Button>
