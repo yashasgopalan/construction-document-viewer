@@ -42,9 +42,10 @@ interface PDFViewerProps {
   activeAnnotationTool: string
   onAnnotationsChange: (annotations: any[]) => void
   onPDFFileChange?: (file: File | string | null) => void
+  onScreenshotRequest?: (imgData: string) => void
 }
 
-export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnotationsChange, onPDFFileChange }: PDFViewerProps) {
+export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnotationsChange, onPDFFileChange, onScreenshotRequest }: PDFViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -116,6 +117,7 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
 
   
   const handleScreenshot = async () => {
+    if (!containerRef.current) return;
     if (typeof window === "undefined" || typeof document === "undefined") return;
     const el = containerRef.current;
     if (!el) return;
@@ -126,7 +128,11 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
       el.style.boxShadow = ""; // Remove highlight
       const imgData = canvas.toDataURL("image/png");
       const win = window.open();
-      if (win) {
+      if (typeof onScreenshotRequest === "function") {
+        onScreenshotRequest(imgData); // THIS sends the screenshot to the parent/App
+      }
+      // Button to debug and open screenshot in a tab using a button
+        if (win) {
         win.document.write(`<img src="${imgData}" style="max-width:100vw;max-height:100vh;display:block;margin:auto;" alt="Screenshot"/>`);
         win.document.title = "PDF Screenshot";
       }

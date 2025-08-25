@@ -8,6 +8,7 @@ import { extractPDFText, preparePDFContext, truncateContext, type PDFContext } f
 
 interface AISidebarProps {
   document: string | File | null
+  screenshot?: string | null
 }
 
 interface Message {
@@ -16,7 +17,7 @@ interface Message {
   timestamp: Date
 }
 
-export function AISidebar({ document }: AISidebarProps) {
+export function AISidebar({ document, screenshot }: AISidebarProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       type: "ai",
@@ -127,7 +128,8 @@ export function AISidebar({ document }: AISidebarProps) {
         body: JSON.stringify({
           messages: apiMessages,
           pdfContext: contextString,
-          documentName: pdfContext?.documentName || 'Current Document'
+          documentName: pdfContext?.documentName || 'Current Document',
+          screenshot
         }),
       })
 

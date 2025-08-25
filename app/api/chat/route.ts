@@ -19,6 +19,7 @@ interface ChatRequest {
   messages: ChatMessage[]
   pdfContext?: string
   documentName?: string
+  screenshot?: string
 }
 
 // Accepts string | array | already-HF-shaped content safely
@@ -70,7 +71,16 @@ function normalizeMessage(m: any): { role: Role; content: HFContentPart[] } {
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json()
-    const { messages, pdfContext, documentName } = body
+    const { messages, pdfContext, documentName, screenshot } = body
+
+    let updatedMessages = Array.isArray(messages) ? [...messages] : [];
+  if (screenshot) {
+  updatedMessages.push({
+    role: 'user',
+    content: [ { type: 'image', image: screenshot } ]
+  });
+}
+
 
     const systemPrompt =
       `You are Smortr AI, a helpful assistant for analyzing construction documents and PDFs.\n\n` +
@@ -84,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Build OpenAI/HF Messages API payload:
     const formattedMessages: Array<{ role: Role; content: HFContentPart[] }> = [
       { role: 'system', content: [{ type: 'text', text: systemPrompt }] },
-      ...(Array.isArray(messages) ? messages.map(normalizeMessage) : []),
+      ...(Array.isArray(updatedMessages) ? updatedMessages.map(normalizeMessage) : []),
     ]
      
     if (process.env.NODE_ENV !== 'production') {

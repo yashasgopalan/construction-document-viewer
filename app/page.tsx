@@ -39,6 +39,9 @@ export default function ConstructionDocsApp() {
   const [rightPanelWidth, setRightPanelWidth] = useState(320) // Default width in pixels
   const [isResizing, setIsResizing] = useState(false)
   const resizeRef = useRef<HTMLDivElement>(null)
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const pdfViewerRef = useRef<any>(null)
+
 
   const handleShare = () => {
     // Generate unique share ID
@@ -139,11 +142,13 @@ export default function ConstructionDocsApp() {
         {/* Main PDF Viewer */}
         <div className="flex-1 flex flex-col">
           <PDFViewer
+            ref={pdfViewerRef}
             document={selectedFile}
             annotations={annotations}
             activeAnnotationTool={activeAnnotationTool}
             onAnnotationsChange={setAnnotations}
             onPDFFileChange={setCurrentPDFFile}
+            onScreenshot={setScreenshot}
           />
 
           {/* Bottom Annotation Toolbar */}
@@ -168,7 +173,51 @@ export default function ConstructionDocsApp() {
 
             {/* AI Sidebar with dynamic width */}
             <div style={{ width: `${rightPanelWidth}px` }}>
-              <AISidebar document={currentPDFFile} />
+            <AISidebar
+              document={currentPDFFile}
+              screenshot={screenshot}
+              onSendMessage={async (userMessage: string) => {
+                // 1. Take the screenshot of the current view
+                if (pdfViewerRef.current) {
+                  
+                 // await pdfViewerRef.current.takeScreenshot();
+                }
+
+                // 2. Wait a little for the screenshot state to update
+                setTimeout(async () => {
+                  // 3. Send chat message and screenshot to backend
+                  try {
+                    const response = await fetch('/api/chat', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        message: userMessage,
+                        screenshot, // from parent state
+                        // You can add more info if needed, e.g. documentName, pdfContext, etc
+                      }),
+                    });
+
+                    if (!response.ok) throw new Error('API error!');
+
+                    const data = await response.json();
+                    // e.g., data.response contains AI's reply
+
+                    // 4. TODO: You probably want to update chat UI here
+                    // - You could lift chat messages into parent, or call a callback in AISidebar
+                    // For now, you could log it:
+                    console.log('AI reply:', data.response);
+
+                  } catch (err) {
+                    console.error('Error sending chat:', err);
+                    // Optionally show error to user here
+                  }
+                  // 5. Optionally clear screenshot after sending
+                  setScreenshot(null);
+
+                }, 250); // delay to ensure screenshot state updates -- tweak if necessary!
+              }}
+              screenshot={screenshot}
+            />
             </div>
           </div>
         )}
