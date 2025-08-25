@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useRef, useEffect, useState } from "react"
+import React, { useRef, useEffect, useState, useImperativeHandle } from "react"
 import { FigmaCommentDialog, type CommentThread, type CommentReply } from "./figma-comment-dialog"
 import { ZoomIn, ZoomOut, RotateCcw, Upload, MessageCircle, Camera } from "lucide-react"
 import { Button } from "./ui/button"
@@ -44,8 +43,16 @@ interface PDFViewerProps {
   onPDFFileChange?: (file: File | string | null) => void
   onScreenshotRequest?: (imgData: string) => void
 }
-
-export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnotationsChange, onPDFFileChange, onScreenshotRequest }: PDFViewerProps) {
+export const PDFViewer = React.forwardRef(function PDFViewer({ document, annotations, activeAnnotationTool, onAnnotationsChange, onPDFFileChange, onScreenshotRequest }: PDFViewerProps, ref) {
+  // Expose takeScreenshot method to parent via ref
+  useImperativeHandle(ref, () => ({
+    takeScreenshot: async () => {
+      if (!containerRef.current) return null;
+      const el = containerRef.current;
+      const canvas = await html2canvas(el, { useCORS: true });
+      return canvas.toDataURL("image/png");
+    }
+  }), []);
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -1456,5 +1463,5 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
         />
       )}
     </div>
-  )
-}
+  );
+});

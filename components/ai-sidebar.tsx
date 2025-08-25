@@ -9,6 +9,7 @@ import { extractPDFText, preparePDFContext, truncateContext, type PDFContext } f
 interface AISidebarProps {
   document: string | File | null
   screenshot?: string | null
+  onSendMessage?: (userMessage: string) => Promise<void>;
 }
 
 interface Message {
@@ -17,7 +18,7 @@ interface Message {
   timestamp: Date
 }
 
-export function AISidebar({ document, screenshot }: AISidebarProps) {
+export function AISidebar({ document, screenshot, onSendMessage }: AISidebarProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       type: "ai",
@@ -86,79 +87,36 @@ export function AISidebar({ document, screenshot }: AISidebarProps) {
   }, [messages])
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return
-
-    const userMessage = inputValue.trim()
-    setInputValue("")
-    setIsLoading(true)
+    if (!inputValue.trim() || isLoading) return;
+    const userMessage = inputValue.trim();
+    setInputValue("");
+    setIsLoading(true);
 
     // Add user message immediately
     const newUserMessage: Message = {
       type: "user",
       content: userMessage,
       timestamp: new Date(),
-    }
-    
-    setMessages(prev => [...prev, newUserMessage])
+    };
+    setMessages(prev => [...prev, newUserMessage]);
 
-    try {
-      // Prepare context for the API
-      let contextString = ""
-      if (pdfContext) {
-        const preparedContext = preparePDFContext(pdfContext)
-        contextString = truncateContext(preparedContext, 6000) // Leave room for conversation
+    if (onSendMessage) {
+      try {
+        await onSendMessage(userMessage);
+        // Optionally, you can update messages with AI response here if you want to lift state up
+      } catch (error) {
+        console.error('Error sending message:', error);
+        const errorMessage: Message = {
+          type: "ai",
+          content: "I apologize, but I encountered an error processing your request. Please try again or check your connection.",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsLoading(false);
       }
-
-      // Prepare messages for the API (excluding the welcome message)
-      const apiMessages = messages
-        .filter(msg => msg.type === "user" || (msg.type === "ai" && msg.content !== messages[0].content))
-        .map(msg => ({
-          role: msg.type === "user" ? "user" as const : "assistant" as const,
-          content: msg.content
-        }))
-
-      // Add the new user message
-      apiMessages.push({ role: "user", content: userMessage })
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: apiMessages,
-          pdfContext: contextString,
-          documentName: pdfContext?.documentName || 'Current Document',
-          screenshot
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      const aiMessage: Message = {
-        type: "ai",
-        content: data.response,
-        timestamp: new Date(),
-      }
-
-      setMessages(prev => [...prev, aiMessage])
-
-    } catch (error) {
-      console.error('Error sending message:', error)
-      
-      const errorMessage: Message = {
-        type: "ai",
-        content: "I apologize, but I encountered an error processing your request. Please try again or check your connection.",
-        timestamp: new Date(),
-      }
-      
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsLoading(false)
+    } else {
+      setIsLoading(false);
     }
   }
 

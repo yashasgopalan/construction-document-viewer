@@ -1,4 +1,6 @@
+
 "use client"
+import React from "react"
 
 import { useState, useRef, useCallback } from "react"
 import { ProjectSidebar } from "@/components/project-sidebar"
@@ -8,7 +10,7 @@ import { Header } from "@/components/header"
 import { ShareDialog } from "@/components/share-dialog"
 import { ChevronLeft, PanelLeft, PanelRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import React from "react"
+// ...existing code...
 import dynamic from "next/dynamic"
 
 // Dynamically import AISidebar to avoid SSR issues
@@ -30,7 +32,7 @@ const AISidebar = dynamic(() => import("@/components/ai-sidebar").then(mod => ({
 export default function ConstructionDocsApp() {
   const [selectedFile, setSelectedFile] = useState("L0-AW102")
   const [currentPDFFile, setCurrentPDFFile] = useState<File | string | null>(null)
-  const [annotations, setAnnotations] = useState([])
+  const [annotations, setAnnotations] = React.useState<any[]>([])
   const [activeAnnotationTool, setActiveAnnotationTool] = useState("cursor")
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true)
@@ -40,7 +42,7 @@ export default function ConstructionDocsApp() {
   const [isResizing, setIsResizing] = useState(false)
   const resizeRef = useRef<HTMLDivElement>(null)
   const [screenshot, setScreenshot] = useState<string | null>(null);
-  const pdfViewerRef = useRef<any>(null)
+  const pdfViewerRef = React.useRef<any>(null)
 
 
   const handleShare = () => {
@@ -175,48 +177,49 @@ export default function ConstructionDocsApp() {
             <div style={{ width: `${rightPanelWidth}px` }}>
             <AISidebar
               document={currentPDFFile}
-              screenshot={screenshot}
               onSendMessage={async (userMessage: string) => {
-                // 1. Take the screenshot of the current view
-                if (pdfViewerRef.current) {
-                  
-                 // await pdfViewerRef.current.takeScreenshot();
+                let screenshotData = null;
+                console.log('pdfViewerRef.current:', pdfViewerRef.current);
+                if (pdfViewerRef.current && typeof pdfViewerRef.current.takeScreenshot === 'function') {
+                  screenshotData = await pdfViewerRef.current.takeScreenshot();
                 }
+                console.log('Screenshot data:', screenshotData);
+                try {
+                  // Build the messages array for the API (add your logic as needed)
+                  const messages = [
+                    { role: 'user', content: userMessage }
+                    // Optionally add previous chat history here
+                  ];
+                  const pdfContext = null; // Set this to your actual PDF context if available
+                  const documentName = typeof currentPDFFile === 'string' ? currentPDFFile : (currentPDFFile?.name || '');
 
-                // 2. Wait a little for the screenshot state to update
-                setTimeout(async () => {
-                  // 3. Send chat message and screenshot to backend
-                  try {
-                    const response = await fetch('/api/chat', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        message: userMessage,
-                        screenshot, // from parent state
-                        // You can add more info if needed, e.g. documentName, pdfContext, etc
-                      }),
-                    });
+                  const payload = {
+                    messages,
+                    pdfContext,
+                    documentName,
+                    screenshot: screenshotData ?? null,
+                  };
+                  console.log('Payload being sent:', payload);
+                  const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                  });
 
-                    if (!response.ok) throw new Error('API error!');
+                  if (!response.ok) throw new Error('API error!');
 
-                    const data = await response.json();
-                    // e.g., data.response contains AI's reply
+                  const data = await response.json();
+                  // e.g., data.response contains AI's reply
+                  // 4. TODO: You probably want to update chat UI here
+                  // - You could lift chat messages into parent, or call a callback in AISidebar
+                  // For now, you could log it:
+                  console.log('AI reply:', data.response);
 
-                    // 4. TODO: You probably want to update chat UI here
-                    // - You could lift chat messages into parent, or call a callback in AISidebar
-                    // For now, you could log it:
-                    console.log('AI reply:', data.response);
-
-                  } catch (err) {
-                    console.error('Error sending chat:', err);
-                    // Optionally show error to user here
-                  }
-                  // 5. Optionally clear screenshot after sending
-                  setScreenshot(null);
-
-                }, 250); // delay to ensure screenshot state updates -- tweak if necessary!
+                } catch (err) {
+                  console.error('Error sending chat:', err);
+                  // Optionally show error to user here
+                }
               }}
-              screenshot={screenshot}
             />
             </div>
           </div>

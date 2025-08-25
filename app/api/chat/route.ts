@@ -103,7 +103,8 @@ export async function POST(request: NextRequest) {
         Array.isArray(messages)
           ? messages.map(m => ({ role: m?.role, isArray: Array.isArray(m?.content), type: typeof m?.content }))
           : typeof messages
-      )
+      );
+      console.log('Screenshot field:', screenshot);
     }
 
 
