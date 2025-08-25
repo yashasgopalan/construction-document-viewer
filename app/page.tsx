@@ -1,8 +1,12 @@
-
 "use client"
 import React from "react"
-
 import { useState, useRef, useCallback } from "react"
+// Message type for chat
+type Message = {
+  type: "user" | "ai";
+  content: string;
+  timestamp: Date;
+};
 import { ProjectSidebar } from "@/components/project-sidebar"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { AnnotationToolbar } from "@/components/annotation-toolbar"
@@ -30,6 +34,14 @@ const AISidebar = dynamic(() => import("@/components/ai-sidebar").then(mod => ({
 })
 
 export default function ConstructionDocsApp() {
+  // AI chat messages state
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      type: "ai",
+      content: "Hello! I'm your AI assistant. I can help you analyze your documents and answer questions about the PDF content.",
+      timestamp: new Date(),
+    },
+  ]);
   const [selectedFile, setSelectedFile] = useState("L0-AW102")
   const [currentPDFFile, setCurrentPDFFile] = useState<File | string | null>(null)
   const [annotations, setAnnotations] = React.useState<any[]>([])
@@ -150,7 +162,6 @@ export default function ConstructionDocsApp() {
             activeAnnotationTool={activeAnnotationTool}
             onAnnotationsChange={setAnnotations}
             onPDFFileChange={setCurrentPDFFile}
-            onScreenshot={setScreenshot}
           />
 
           {/* Bottom Annotation Toolbar */}
@@ -177,47 +188,43 @@ export default function ConstructionDocsApp() {
             <div style={{ width: `${rightPanelWidth}px` }}>
             <AISidebar
               document={currentPDFFile}
+              messages={messages}
+              setMessagesAction={setMessages}
               onSendMessage={async (userMessage: string) => {
                 let screenshotData = null;
-                console.log('pdfViewerRef.current:', pdfViewerRef.current);
                 if (pdfViewerRef.current && typeof pdfViewerRef.current.takeScreenshot === 'function') {
                   screenshotData = await pdfViewerRef.current.takeScreenshot();
                 }
-                console.log('Screenshot data:', screenshotData);
+                // Add user message immediately
+                setMessages((prev: Message[]) => [...prev, { type: "user", content: userMessage, timestamp: new Date() }]);
+                // Build the messages array for the API (excluding the welcome message)
+                const apiMessages = messages
+                  .filter((msg: Message) => msg.type === "user" || (msg.type === "ai" && msg.content !== messages[0].content))
+                  .map((msg: Message) => ({
+                    role: msg.type === "user" ? "user" : "assistant",
+                    content: msg.content
+                  }));
+                apiMessages.push({ role: "user", content: userMessage });
+                const pdfContext = null; // Set this to your actual PDF context if available
+                const documentName = typeof currentPDFFile === 'string' ? currentPDFFile : (currentPDFFile?.name || '');
+                const payload = {
+                  messages: apiMessages,
+                  pdfContext,
+                  documentName,
+                  screenshot: screenshotData ?? null,
+                };
                 try {
-                  // Build the messages array for the API (add your logic as needed)
-                  const messages = [
-                    { role: 'user', content: userMessage }
-                    // Optionally add previous chat history here
-                  ];
-                  const pdfContext = null; // Set this to your actual PDF context if available
-                  const documentName = typeof currentPDFFile === 'string' ? currentPDFFile : (currentPDFFile?.name || '');
-
-                  const payload = {
-                    messages,
-                    pdfContext,
-                    documentName,
-                    screenshot: screenshotData ?? null,
-                  };
-                  console.log('Payload being sent:', payload);
                   const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                   });
-
                   if (!response.ok) throw new Error('API error!');
-
                   const data = await response.json();
-                  // e.g., data.response contains AI's reply
-                  // 4. TODO: You probably want to update chat UI here
-                  // - You could lift chat messages into parent, or call a callback in AISidebar
-                  // For now, you could log it:
-                  console.log('AI reply:', data.response);
-
+                  setMessages((prev: Message[]) => [...prev, { type: "ai", content: data.response, timestamp: new Date() }]);
                 } catch (err) {
+                  setMessages((prev: Message[]) => [...prev, { type: "ai", content: "I apologize, but I encountered an error processing your request. Please try again or check your connection.", timestamp: new Date() }]);
                   console.error('Error sending chat:', err);
-                  // Optionally show error to user here
                 }
               }}
             />

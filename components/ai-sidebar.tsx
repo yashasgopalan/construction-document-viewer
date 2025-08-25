@@ -6,9 +6,16 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, Loader2 } from "lucide-react"
 import { extractPDFText, preparePDFContext, truncateContext, type PDFContext } from "@/lib/pdf-utils"
 
+interface Message {
+  type: "user" | "ai"
+  content: string
+  timestamp: Date
+}
+
 interface AISidebarProps {
   document: string | File | null
-  screenshot?: string | null
+  messages: Message[]
+  setMessagesAction: React.Dispatch<React.SetStateAction<Message[]>>
   onSendMessage?: (userMessage: string) => Promise<void>;
 }
 
@@ -18,14 +25,7 @@ interface Message {
   timestamp: Date
 }
 
-export function AISidebar({ document, screenshot, onSendMessage }: AISidebarProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      type: "ai",
-      content: "Hello! I'm your AI assistant. I can help you analyze your documents and answer questions about the PDF content.",
-      timestamp: new Date(),
-    },
-  ])
+export function AISidebar({ document, messages, setMessagesAction, onSendMessage }: AISidebarProps) {
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [pdfContext, setPdfContext] = useState<PDFContext | null>(null)
@@ -56,7 +56,7 @@ export function AISidebar({ document, screenshot, onSendMessage }: AISidebarProp
       
       // Update welcome message with document info
       if (messages.length === 1 && messages[0].type === "ai") {
-        setMessages(prev => [
+        setMessagesAction((prev: Message[]) => [
           {
             type: "ai",
             content: `Hello! I'm analyzing "${context.documentName}" (${context.pages} pages). I can help you understand the construction details, specifications, and technical information in this document.`,
@@ -92,13 +92,7 @@ export function AISidebar({ document, screenshot, onSendMessage }: AISidebarProp
     setInputValue("");
     setIsLoading(true);
 
-    // Add user message immediately
-    const newUserMessage: Message = {
-      type: "user",
-      content: userMessage,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, newUserMessage]);
+
 
     if (onSendMessage) {
       try {
@@ -111,7 +105,7 @@ export function AISidebar({ document, screenshot, onSendMessage }: AISidebarProp
           content: "I apologize, but I encountered an error processing your request. Please try again or check your connection.",
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, errorMessage]);
+  setMessagesAction(prev => [...prev, errorMessage]);
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +138,7 @@ export function AISidebar({ document, screenshot, onSendMessage }: AISidebarProp
         </p>
       </div>
 
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+  <ScrollArea className="flex-1 p-4">
         <div className="space-y-4 mb-6">
           {messages.map((message, index) => (
             <div key={index} className={`flex gap-2 ${message.type === "user" ? "justify-end" : ""}`}>
