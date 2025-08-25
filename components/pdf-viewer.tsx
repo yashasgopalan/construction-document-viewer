@@ -113,34 +113,24 @@ export function PDFViewer({ document, annotations, activeAnnotationTool, onAnnot
   } | null>(null)
   const [editingTextAnnotation, setEditingTextAnnotation] = useState<string | null>(null)
 
-  const renderPdfPageToImage = async () => {
-    if (!pdfjs || !pdfFile || !currentPage) return null;
-    // Accept both URL and File objects
-    const fileSpec = typeof pdfFile === 'string' ? pdfFile : URL.createObjectURL(pdfFile);
-  
-    const doc = await pdfjs.getDocument(fileSpec).promise;
-    const page = await doc.getPage(currentPage);
-  
-    const viewport = page.getViewport({ scale: 2 }); // adjust scale as needed
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const context = canvas.getContext("2d");
-  
-    await page.render({ canvasContext: context, viewport }).promise;
-    const dataUrl = canvas.toDataURL();
-    return dataUrl;
-  };
-  
 
+  
   const handleScreenshot = async () => {
-    if (!containerRef.current) return;
-    containerRef.current.style.boxShadow = "0 0 0 4px red inset";
-    const canvas = await html2canvas(containerRef.current, { useCORS: true });
-    const imgData = canvas.toDataURL("image/png");
-    // For testing: open the screenshot in a new browser tab
-    window.open(imgData);
-    // Later: send imgData to your chatbot as needed
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    const el = containerRef.current;
+    if (!el) return;
+    // Optionally, add a highlight to show what is being captured
+    //el.style.boxShadow = "0 0 0 4px red inset";
+    setTimeout(async () => {
+      const canvas = await html2canvas(el, { useCORS: true });
+      el.style.boxShadow = ""; // Remove highlight
+      const imgData = canvas.toDataURL("image/png");
+      const win = window.open();
+      if (win) {
+        win.document.write(`<img src="${imgData}" style="max-width:100vw;max-height:100vh;display:block;margin:auto;" alt="Screenshot"/>`);
+        win.document.title = "PDF Screenshot";
+      }
+    }, 50);
   };
 
   // Notify parent when PDF file changes
