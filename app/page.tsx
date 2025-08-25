@@ -197,6 +197,21 @@ export default function ConstructionDocsApp() {
                 }
                 // Add user message immediately
                 setMessages((prev: Message[]) => [...prev, { type: "user", content: userMessage, timestamp: new Date() }]);
+
+                // Check screenshot size (base64 string length, ~1.33 bytes per char)
+                const MAX_SCREENSHOT_SIZE = 1.5 * 1024 * 1024; // 1.5MB
+                if (screenshotData && screenshotData.length * 0.75 > MAX_SCREENSHOT_SIZE) {
+                  setMessages((prev: Message[]) => [
+                    ...prev,
+                    {
+                      type: "ai",
+                      content: "The screenshot is too large to process. Please try uploading a smaller file or reduce the screenshot area.",
+                      timestamp: new Date(),
+                    },
+                  ]);
+                  return;
+                }
+
                 // Build the messages array for the API (excluding the welcome message)
                 const apiMessages = messages
                   .filter((msg: Message) => msg.type === "user" || (msg.type === "ai" && msg.content !== messages[0].content))
