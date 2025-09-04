@@ -2,8 +2,18 @@
 
 import { Menu, LogOut } from "lucide-react"
 import { supabase } from "@/lib/supabase-client"
+import { useEffect, useState } from "react"
+
 
 export function Header() {
+  const [email, setEmail] = useState(null)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setEmail(user?.email || null)
+    })
+  }, [])
+  
+
   return (
     <header className="h-14 bg-[hsl(var(--sidebar))] border-b border-[hsl(var(--sidebar-border))] flex items-center justify-between px-4 border-[rgba(64,64,64,1)]">
       <div className="flex items-center gap-3">
@@ -21,7 +31,9 @@ export function Header() {
           <Menu className="w-4 h-4 text-[hsl(var(--foreground))]" />
         </button>
         <button className="p-2 hover:bg-[#2D2D2D] rounded transition-colors">
-          <span className="text-[hsl(var(--foreground))] font-medium text-sm">CN</span>
+          <span className="text-[hsl(var(--foreground))] font-medium text-sm">
+            {email || "Guest"}
+          </span>
         </button>
         <button onClick={() => supabase.auth.signOut()} className="p-2 hover:bg-[#2D2D2D] rounded transition-colors flex items-center gap-2">
           <LogOut className="w-4 h-4 text-[hsl(var(--foreground))]" />
