@@ -12,10 +12,16 @@ import { PDFViewer } from "@/components/pdf-viewer"
 import { AnnotationToolbar } from "@/components/annotation-toolbar"
 import { Header } from "@/components/header"
 import { ShareDialog } from "@/components/share-dialog"
+import { AuthPopup } from "@/components/auth-popup"
 import { ChevronLeft, PanelLeft, PanelRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 // ...existing code...
 import dynamic from "next/dynamic"
+import { supabase } from "@/lib/supabase-client"
+import type { User } from "@supabase/supabase-js"
+import { useEffect } from "react"
+
+
 
 // Dynamically import AISidebar to avoid SSR issues
 const AISidebar = dynamic(() => import("@/components/ai-sidebar").then(mod => ({ default: mod.AISidebar })), {
@@ -56,6 +62,35 @@ export default function ConstructionDocsApp() {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const pdfViewerRef = React.useRef<any>(null)
 
+  // Auth state
+  const [user, setUser] = useState<User | null>(null)
+  const [showAuthPopup, setShowAuthPopup] = useState(false)
+
+  // Check for user on mount
+  useEffect(() => {
+    const getSession = async () => {
+      const { data } = await supabase.auth.getUser()
+      setUser(data?.user ?? null)
+    }
+    getSession()
+
+    // Set up listener for changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      // Close auth popup when user signs in
+      if (session?.user) {
+        setShowAuthPopup(false)
+      }
+    })
+    return () => listener?.subscription.unsubscribe()
+  }, [])
+
+  // Show auth popup when user is not authenticated
+  useEffect(() => {
+    if (user === null) {
+      setShowAuthPopup(true)
+    }
+  }, [user])
 
   const handleShare = () => {
     // Generate unique share ID
@@ -265,6 +300,8 @@ export default function ConstructionDocsApp() {
       </div>
 
       <ShareDialog isOpen={showShareDialog} onClose={() => setShowShareDialog(false)} shareUrl={shareUrl} />
+      <AuthPopup isOpen={showAuthPopup} onClose={() => setShowAuthPopup(false)} />
     </div>
   )
 }
+

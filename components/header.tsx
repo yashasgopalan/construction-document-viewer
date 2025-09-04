@@ -1,6 +1,7 @@
 "use client"
 
 import { Menu, LogOut } from "lucide-react"
+import { supabase } from "@/lib/supabase-client"
 
 export function Header() {
   return (
@@ -22,7 +23,7 @@ export function Header() {
         <button className="p-2 hover:bg-[#2D2D2D] rounded transition-colors">
           <span className="text-[hsl(var(--foreground))] font-medium text-sm">CN</span>
         </button>
-        <button className="p-2 hover:bg-[#2D2D2D] rounded transition-colors flex items-center gap-2">
+        <button onClick={() => supabase.auth.signOut()} className="p-2 hover:bg-[#2D2D2D] rounded transition-colors flex items-center gap-2">
           <LogOut className="w-4 h-4 text-[hsl(var(--foreground))]" />
           <span className="text-[hsl(var(--foreground))] font-medium text-sm">Logout</span>
         </button>
