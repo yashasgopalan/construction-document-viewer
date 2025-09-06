@@ -48,7 +48,7 @@ export default function ConstructionDocsApp() {
       timestamp: new Date(),
     },
   ]);
-  const [selectedFile, setSelectedFile] = useState("L0-AW102")
+  const [selectedFile, setSelectedFile] = useState("")
   const [currentPDFFile, setCurrentPDFFile] = useState<File | string | null>(null)
   const [annotations, setAnnotations] = React.useState<any[]>([])
   const [activeAnnotationTool, setActiveAnnotationTool] = useState("cursor")
@@ -173,7 +173,7 @@ export default function ConstructionDocsApp() {
       <Header />
 
       <div className="flex-1 flex overflow-hidden">
-        {isLeftPanelOpen && <ProjectSidebar selectedFile={selectedFile} onFileSelect={setSelectedFile} />}
+        {isLeftPanelOpen && <ProjectSidebar selectedFile={selectedFile} onFileSelect={setSelectedFile} showOnlyPDFs={true} />}
 
         <div className="flex flex-col justify-center">
           <Button
@@ -190,14 +190,24 @@ export default function ConstructionDocsApp() {
 
         {/* Main PDF Viewer */}
         <div className="flex-1 flex flex-col">
-          <PDFViewer
-            ref={pdfViewerRef}
-            document={selectedFile}
-            annotations={annotations}
-            activeAnnotationTool={activeAnnotationTool}
-            onAnnotationsChange={setAnnotations}
-            onPDFFileChange={setCurrentPDFFile}
-          />
+          {selectedFile ? (
+            <PDFViewer
+              ref={pdfViewerRef}
+              document={selectedFile}
+              annotations={annotations}
+              activeAnnotationTool={activeAnnotationTool}
+              onAnnotationsChange={setAnnotations}
+              onPDFFileChange={setCurrentPDFFile}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-muted/20">
+              <div className="text-center">
+                <div className="text-6xl mb-4">📄</div>
+                <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Document Selected</h3>
+                <p className="text-sm text-muted-foreground">Select a PDF document from the sidebar to get started</p>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Annotation Toolbar */}
           <AnnotationToolbar

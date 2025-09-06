@@ -7,6 +7,7 @@ import { Button } from "./ui/button"
 import dynamic from "next/dynamic"
 import { TextAnnotationEditor } from "./text-annotation-editor"
 import html2canvas from "html2canvas-pro"
+import { generateSignedUrl } from "@/lib/storage-utils"
 
 
 // Dynamically import react-pdf components to avoid SSR and ESM issues
@@ -109,6 +110,7 @@ export const PDFViewer = React.forwardRef(function PDFViewer({ document, annotat
   const [pdfError, setPdfError] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
 
   const [activeTextAnnotation, setActiveTextAnnotation] = useState<{
     id: string
@@ -145,6 +147,41 @@ export const PDFViewer = React.forwardRef(function PDFViewer({ document, annotat
       }
     }, 50);
   };
+
+  // Load PDF from Supabase when document prop changes
+  useEffect(() => {
+    const loadPdfFromSupabase = async () => {
+      // Check if document is a Supabase path (contains user ID)
+      if (document && document.includes('/') && !document.startsWith('/') && !document.startsWith('http')) {
+        setIsLoadingPdf(true)
+        setPdfError(null)
+        
+        try {
+          const signedUrlResult = await generateSignedUrl('user-files', document)
+          
+          if (signedUrlResult.error) {
+            setPdfError(`Failed to load PDF: ${signedUrlResult.error}`)
+            setPdfFile("/placeholder-construction-drawing.pdf")
+          } else {
+            setPdfFile(signedUrlResult.signedUrl)
+            setPdfError(null)
+          }
+        } catch (err) {
+          console.error('Error loading PDF from Supabase:', err)
+          setPdfError(`Failed to load PDF: ${err instanceof Error ? err.message : 'Unknown error'}`)
+          setPdfFile("/placeholder-construction-drawing.pdf")
+        } finally {
+          setIsLoadingPdf(false)
+        }
+      } else {
+        // Use the document as-is (for local files or URLs)
+        setPdfFile(document)
+        setPdfError(null)
+      }
+    }
+
+    loadPdfFromSupabase()
+  }, [document])
 
   // Notify parent when PDF file changes
   useEffect(() => {
@@ -1052,7 +1089,14 @@ export const PDFViewer = React.forwardRef(function PDFViewer({ document, annotat
         </div>
 
         <div className="flex-1 border border-border rounded overflow-hidden relative">
-          {pdfError ? (
+          {isLoadingPdf ? (
+            <div className="flex items-center justify-center h-full bg-muted/20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading PDF...</p>
+              </div>
+            </div>
+          ) : pdfError ? (
             <div className="flex items-center justify-center h-full bg-muted/20">
               <div className="text-center">
                 <p className="text-destructive mb-2">{pdfError}</p>
