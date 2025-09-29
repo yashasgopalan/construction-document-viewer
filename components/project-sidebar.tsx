@@ -550,7 +550,7 @@ export function ProjectSidebar({ selectedFile, onFileSelect, showOnlyPDFs = fals
                                   startRename(item)
                                 }}>
                                   <Edit2 className="w-4 h-4 mr-2" />
-                                  Rename Project
+                                  Edit Project
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
