@@ -20,12 +20,10 @@ const Page = dynamic(() => import("react-pdf").then((mod) => mod.Page), {
   loading: () => <div className="flex items-center justify-center h-96"><div className="text-muted-foreground">Loading page...</div></div>
 })
 
-// Import worker for PDF.js 
-let pdfjs: any = null
-if (typeof window !== "undefined") {
-  import("react-pdf").then((mod) => {
-    pdfjs = mod.pdfjs
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+// Configure PDF.js worker on client side only
+if (typeof window !== 'undefined') {
+  import('react-pdf').then((module) => {
+    module.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${module.pdfjs.version}/build/pdf.worker.min.mjs`
   })
 }
 

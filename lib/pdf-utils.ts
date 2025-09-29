@@ -1,14 +1,3 @@
-// Only import pdfjs on the client side to avoid SSR issues
-let pdfjs: any = null
-
-if (typeof window !== 'undefined') {
-  // Dynamic import to avoid SSR issues
-  import('react-pdf').then((module) => {
-    pdfjs = module.pdfjs
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
-  })
-}
-
 export interface PDFContext {
   text: string
   pages: number
@@ -26,14 +15,21 @@ export async function extractPDFText(file: File | string): Promise<PDFContext> {
   }
 
   try {
-    // Dynamically import pdfjs if not already loaded
-    if (!pdfjs) {
-      const module = await import('react-pdf')
-      pdfjs = module.pdfjs
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+    // Dynamically import pdfjs-dist only on client side to avoid Next.js SSR issues
+    const pdfjsLib = await import('pdfjs-dist')
+    
+    // Configure worker using CDN matching the exact version
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+    
+    // Convert File to ArrayBuffer if needed
+    let documentSource: string | ArrayBuffer
+    if (typeof file === 'string') {
+      documentSource = file
+    } else {
+      documentSource = await file.arrayBuffer()
     }
-
-    const loadingTask = pdfjs.getDocument(file)
+    
+    const loadingTask = pdfjsLib.getDocument(documentSource)
     const pdf = await loadingTask.promise
     const numPages = pdf.numPages
     
