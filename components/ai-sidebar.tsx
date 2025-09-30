@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, Loader2 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { extractPDFText, preparePDFContext, truncateContext, type PDFContext } from "@/lib/pdf-utils"
 
 interface Message {
@@ -149,7 +151,42 @@ export function AISidebar({ document, messages, setMessagesAction, onSendMessage
                     : "bg-sidebar-accent text-sidebar-foreground max-w-[90%]"
                 }`}
               >
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                {message.type === "ai" ? (
+                  <div className="prose prose-sm prose-invert max-w-none">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        // Custom styling for markdown elements
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                        code: ({ children, className }) => {
+                          const isInline = !className;
+                          return isInline ? (
+                            <code className="bg-gray-700 px-1 py-0.5 rounded text-sm">{children}</code>
+                          ) : (
+                            <code className={`${className} block bg-gray-700 p-2 rounded text-sm overflow-x-auto`}>{children}</code>
+                          );
+                        },
+                        pre: ({ children }) => <pre className="bg-gray-700 p-2 rounded text-sm overflow-x-auto mb-2">{children}</pre>,
+                        blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-500 pl-4 italic mb-2">{children}</blockquote>,
+                        h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-sm font-bold mb-2">{children}</h3>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        table: ({ children }) => <table className="border-collapse border border-gray-600 mb-2 text-xs">{children}</table>,
+                        th: ({ children }) => <th className="border border-gray-600 px-2 py-1 bg-gray-700">{children}</th>,
+                        td: ({ children }) => <td className="border border-gray-600 px-2 py-1">{children}</td>,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                )}
                 <div className="text-xs opacity-70 mt-1">
                   {formatTime(message.timestamp)}
                 </div>
