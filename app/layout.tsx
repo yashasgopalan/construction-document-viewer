@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     siteName: 'Smortr',
     images: [
       {
-        url: '/Smortr Logo Favicon.svg',
+        url: '/smortr.svg',
         width: 1200,
         height: 630,
         alt: 'Smortr - Construction Document Viewer',
@@ -80,9 +80,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/Smortr Logo Favicon.svg',
-    shortcut: '/Smortr Logo Favicon.svg',
-    apple: '/Smortr Logo Favicon.svg',
+    icon: '/smortr.svg',
+    shortcut: '/smortr.svg',
+    apple: '/smortr.svg',
   },
   manifest: '/manifest.json',
   category: 'construction technology',

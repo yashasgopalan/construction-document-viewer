@@ -54,7 +54,7 @@ This document outlines the comprehensive meta tags and social sharing strategy i
 
 ### Favicon Implementation
 - **Format**: SVG for scalability across devices
-- **Source**: Smortr Logo Favicon.svg
+- **Source**: smortr.svg
 - **Sizes**: Multiple formats for different use cases
 - **Brand Consistency**: Matches main logo design
 
