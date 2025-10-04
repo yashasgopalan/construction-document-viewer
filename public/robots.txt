@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://smortr.com/sitemap.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 1
+
+# Disallow sensitive areas
+Disallow: /api/
+Disallow: /private/
+Disallow: /secure-files/
