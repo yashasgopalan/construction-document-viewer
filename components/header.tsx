@@ -18,9 +18,11 @@ export function Header() {
     <header className="h-14 bg-[hsl(var(--sidebar))] border-b border-[hsl(var(--sidebar-border))] flex items-center justify-between px-4 border-[rgba(64,64,64,1)]">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-orange-500 rounded flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
-          </div>
+          <img 
+            src="/smortr.svg" 
+            alt="Smortr Logo" 
+            className="w-8 h-8"
+          />
           <span className="font-semibold text-[hsl(var(--foreground))]">Smortr</span>
         </div>
         <span className="text-[hsl(var(--muted-foreground))] ml-8">Document Viewer</span>
